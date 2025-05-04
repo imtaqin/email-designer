@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag & Drop Email Designer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #2c3e50;
+            color: #fff;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toolbar {
+            background: #34495e;
+            color: #fff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #ecf0f1;
+        }
+        
+        .canvas {
+            background: #fff;
+            min-height: 800px;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .components-list {
+            margin-top: 20px;
+        }
+        
+        .component-category {
+            margin-bottom: 15px;
+        }
+        
+        .component-category h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .component {
+            background: #3498db;
+            color: #fff;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+        
+        .component:hover {
+            background: #2980b9;
+        }
+        
+        .element-settings {
+            width: 300px;
+            background: #fff;
+            border-left: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .element-settings h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .settings-group {
+            margin-bottom: 20px;
+        }
+        
+        .settings-group h4 {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background: #3498db;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .email-block {
+            position: relative;
+            border: 1px solid transparent;
+            margin-bottom: 10px;
+            min-height: 30px;
+        }
+        
+        .email-block:hover {
+            border: 1px dashed #3498db;
+        }
+        
+        .email-block.selected {
+            border: 1px solid #3498db;
+        }
+        
+        .email-block .controls {
+            position: absolute;
+            right: 0;
+            top: 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+            background: rgba(52, 152, 219, 0.8);
+            padding: 2px;
+        }
+        
+        .email-block:hover .controls {
+            opacity: 1;
+        }
+        
+        .email-block .controls button {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 5px;
+        }
+        
+        .dropzone {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        
+        .dropzone.dragover {
+            background: rgba(52, 152, 219, 0.1);
+            border-color: #3498db;
+        }
+        
+        .text-block {
+            padding: 15px;
+        }
+        
+        .image-block {
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .image-block img {
+            max-width: 100%;
+        }
+        
+        .button-block {
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .divider-block {
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .divider-block hr {
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+        
+        .spacer-block {
+            padding: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Sidebar - Components -->
+        <div class="sidebar">
+            <h2>Email Components</h2>
+            <div class="components-list">
+                <div class="component-category">
+                    <h3>Layout</h3>
+                    <div class="component" draggable="true" data-type="container">Container</div>
+                    <div class="component" draggable="true" data-type="column-1">1 Column</div>
+                    <div class="component" draggable="true" data-type="column-2">2 Columns</div>
+                </div>
+                <div class="component-category">
+                    <h3>Content</h3>
+                    <div class="component" draggable="true" data-type="text">Text</div>
+                    <div class="component" draggable="true" data-type="image">Image</div>
+                    <div class="component" draggable="true" data-type="button">Button</div>
+                    <div class="component" draggable="true" data-type="divider">Divider</div>
+                    <div class="component" draggable="true" data-type="spacer">Spacer</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div>
+                    <button id="preview-btn">Preview</button>
+                    <button id="save-btn">Save Template</button>
+                </div>
+                <div>
+                    <button id="export-html-btn">Export HTML</button>
+                    <button id="send-test-btn">Send Test Email</button>
+                </div>
+            </div>
+            
+            <!-- Canvas -->
+            <div class="canvas-container">
+                <div class="canvas" id="email-canvas">
+                    <!-- Initial dropzone -->
+                    <div class="dropzone" id="initial-dropzone">
+                        Drag and drop components here
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar - Element Settings -->
+        <div class="element-settings" id="settings-panel">
+            <h3>Element Settings</h3>
+            <div id="no-selection-message">Select an element to edit its properties</div>
+            <div id="element-properties" style="display: none;">
+                <!-- Dynamic content will be added here based on selected element -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store references to DOM elements
+            const emailCanvas = document.getElementById('email-canvas');
+            const components = document.querySelectorAll('.component');
+            const initialDropzone = document.getElementById('initial-dropzone');
+            const settingsPanel = document.getElementById('settings-panel');
+            const noSelectionMessage = document.getElementById('no-selection-message');
+            const elementProperties = document.getElementById('element-properties');
+            const previewBtn = document.getElementById('preview-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const exportHtmlBtn = document.getElementById('export-html-btn');
+            const sendTestBtn = document.getElementById('send-test-btn');
+            
+            // Track the currently selected element
+            let selectedElement = null;
+            
+            // Counter for generating unique IDs
+            let blockCounter = 0;
+            
+            // Initialize the drag and drop functionality
+            initDragAndDrop();
+            
+            // Initialize button event listeners
+            initButtons();
+            
+            function initDragAndDrop() {
+                // Make components draggable
+                components.forEach(component => {
+                    component.addEventListener('dragstart', handleDragStart);
+                });
+                
+                // Set up initial dropzone
+                initialDropzone.addEventListener('dragover', handleDragOver);
+                initialDropzone.addEventListener('dragleave', handleDragLeave);
+                initialDropzone.addEventListener('drop', handleDrop);
+            }
+            
+            function initButtons() {
+                previewBtn.addEventListener('click', previewEmail);
+                saveBtn.addEventListener('click', saveTemplate);
+                exportHtmlBtn.addEventListener('click', exportHtml);
+                sendTestBtn.addEventListener('click', sendTestEmail);
+            }
+            
+            function handleDragStart(e) {
+                e.dataTransfer.setData('text/plain', e.target.getAttribute('data-type'));
+                e.dataTransfer.effectAllowed = 'copy';
+            }
+            
+            function handleDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                e.currentTarget.classList.add('dragover');
+            }
+            
+            function handleDragLeave(e) {
+                e.currentTarget.classList.remove('dragover');
+            }
+            
+            function handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                
+                const componentType = e.dataTransfer.getData('text/plain');
+                
+                if (componentType) {
+                    const newBlock = createBlock(componentType);
+                    
+                    // If dropping on the initial dropzone, replace it with the new block
+                    if (e.currentTarget.id === 'initial-dropzone') {
+                        emailCanvas.innerHTML = '';
+                        emailCanvas.appendChild(newBlock);
+                        
+                        // Add a new dropzone after the block
+                        const newDropzone = createDropzone();
+                        emailCanvas.appendChild(newDropzone);
+                    } else {
+                        // Insert before the dropzone
+                        e.currentTarget.parentNode.insertBefore(newBlock, e.currentTarget);
+                    }
+                    
+                    // Select the newly created block
+                    selectElement(newBlock);
+                }
+            }
+            
+            function createBlock(type) {
+                blockCounter++;
+                const id = `block-${blockCounter}`;
+                
+                const block = document.createElement('div');
+                block.id = id;
+                block.className = 'email-block';
+                block.setAttribute('data-type', type);
+                
+                // Add controls for the block
+                const controls = document.createElement('div');
+                controls.className = 'controls';
+                
+                const moveBtn = document.createElement('button');
+                moveBtn.innerText = '↕';
+                moveBtn.title = 'Move';
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = '×';
+                deleteBtn.title = 'Delete';
+                deleteBtn.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to delete this element?')) {
+                        block.remove();
+                        if (selectedElement === block) {
+                            selectedElement = null;
+                            updateSettingsPanel();
+                        }
+                    }
+                });
+                
+                controls.appendChild(moveBtn);
+                controls.appendChild(deleteBtn);
+                block.appendChild(controls);
+                
+                // Make the block selectable
+                block.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    selectElement(block);
+                });
+                
+                // Make the block draggable for reordering
+                block.setAttribute('draggable', 'true');
+                block.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', 'move-' + id);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                // Add content based on type
+                switch (type) {
+                    case 'container':
+                        block.innerHTML += `<div class="container-block">
+                            <div class="dropzone">Drag and drop components here</div>
+                        </div>`;
+                        break;
+                    case 'column-1':
+                        block.innerHTML += `<div class="column-block">
+                            <div class="dropzone">Drag and drop components here</div>
+                        </div>`;
+                        break;
+                    case 'column-2':
+                        block.innerHTML += `<div class="column-block" style="display: flex;">
+                            <div style="width: 50%; padding-right: 10px;">
+                                <div class="dropzone">Drag and drop components here</div>
+                            </div>
+                            <div style="width: 50%; padding-left: 10px;">
+                                <div class="dropzone">Drag and drop components here</div>
+                            </div>
+                        </div>`;
+                        break;
+                    case 'text':
+                        block.innerHTML += `<div class="text-block" contenteditable="true">
+                            <p>This is a text block. Click to edit.</p>
+                        </div>`;
+                        break;
+                    case 'image':
+                        block.innerHTML += `<div class="image-block">
+                            <img src="https://via.placeholder.com/600x200" alt="Placeholder Image">
+                        </div>`;
+                        break;
+                    case 'button':
+                        block.innerHTML += `<div class="button-block">
+                            <a href="#" style="display: inline-block; padding: 10px 20px; background-color: #3498db; color: #ffffff; text-decoration: none; border-radius: 4px;">Click Me</a>
+                        </div>`;
+                        break;
+                    case 'divider':
+                        block.innerHTML += `<div class="divider-block">
+                            <hr>
+                        </div>`;
+                        break;
+                    case 'spacer':
+                        block.innerHTML += `<div class="spacer-block" style="height: 30px;"></div>`;
+                        break;
+                    default:
+                        block.innerHTML += `<div>Unknown component type</div>`;
+                }
+                
+                // Set up dropzones inside the block if it has any
+                const dropzones = block.querySelectorAll('.dropzone');
+                dropzones.forEach(dropzone => {
+                    dropzone.addEventListener('dragover', handleDragOver);
+                    dropzone.addEventListener('dragleave', handleDragLeave);
+                    dropzone.addEventListener('drop', handleDrop);
+                });
+                
+                return block;
+            }
+            
+            function createDropzone() {
+                const dropzone = document.createElement('div');
+                dropzone.className = 'dropzone';
+                dropzone.innerText = 'Drag and drop components here';
+                
+                dropzone.addEventListener('dragover', handleDragOver);
+                dropzone.addEventListener('dragleave', handleDragLeave);
+                dropzone.addEventListener('drop', handleDrop);
+                
+                return dropzone;
+            }
+            
+            function selectElement(element) {
+                // Deselect previous element
+                if (selectedElement) {
+                    selectedElement.classList.remove('selected');
+                }
+                
+                // Select new element
+                selectedElement = element;
+                selectedElement.classList.add('selected');
+                
+                // Update settings panel
+                updateSettingsPanel();
+            }
+            
+            function updateSettingsPanel() {
+                if (selectedElement) {
+                    noSelectionMessage.style.display = 'none';
+                    elementProperties.style.display = 'block';
+                    
+                    // Clear existing properties
+                    elementProperties.innerHTML = '';
+                    
+                    // Add properties based on element type
+                    const type = selectedElement.getAttribute('data-type');
+                    
+                    switch (type) {
+                        case 'text':
+                            addTextProperties();
+                            break;
+                        case 'image':
+                            addImageProperties();
+                            break;
+                        case 'button':
+                            addButtonProperties();
+                            break;
+                        case 'divider':
+                            addDividerProperties();
+                            break;
+                        case 'spacer':
+                            addSpacerProperties();
+                            break;
+                        case 'container':
+                        case 'column-1':
+                        case 'column-2':
+                            addContainerProperties();
+                            break;
+                    }
+                } else {
+                    noSelectionMessage.style.display = 'block';
+                    elementProperties.style.display = 'none';
+                }
+            }
+            
+            function addTextProperties() {
+                const textBlock = selectedElement.querySelector('.text-block');
+                
+                // Text Color
+                addColorProperty('Text Color', 'text-color', textBlock.style.color || '#333333', function(value) {
+                    textBlock.style.color = value;
+                });
+                
+                // Background Color
+                addColorProperty('Background Color', 'bg-color', textBlock.style.backgroundColor || '', function(value) {
+                    textBlock.style.backgroundColor = value;
+                });
+                
+                // Font Size
+                addSelectProperty('Font Size', 'font-size', textBlock.style.fontSize || '16px', [
+                    { value: '12px', label: '12px' },
+                    { value: '14px', label: '14px' },
+                    { value: '16px', label: '16px' },
+                    { value: '18px', label: '18px' },
+                    { value: '20px', label: '20px' },
+                    { value: '24px', label: '24px' },
+                    { value: '30px', label: '30px' },
+                ], function(value) {
+                    textBlock.style.fontSize = value;
+                });
+                
+                // Text Align
+                addSelectProperty('Text Align', 'text-align', textBlock.style.textAlign || 'left', [
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                ], function(value) {
+                    textBlock.style.textAlign = value;
+                });
+                
+                // Padding
+                addRangeProperty('Padding', 'padding', parseInt(textBlock.style.padding) || 15, 0, 50, function(value) {
+                    textBlock.style.padding = value + 'px';
+                });
+            }
+            
+            function addImageProperties() {
+                const imageBlock = selectedElement.querySelector('.image-block');
+                const img = imageBlock.querySelector('img');
+                
+                // Image URL
+                addTextProperty('Image URL', 'image-url', img.src, function(value) {
+                    img.src = value;
+                });
+                
+                // Alt Text
+                addTextProperty('Alt Text', 'alt-text', img.alt, function(value) {
+                    img.alt = value;
+                });
+                
+                // Link URL
+                const parentLink = img.parentElement.tagName === 'A' ? img.parentElement : null;
+                addTextProperty('Link URL', 'link-url', parentLink ? parentLink.href : '', function(value) {
+                    if (value) {
+                        if (!parentLink) {
+                            const link = document.createElement('a');
+                            link.href = value;
+                            img.parentNode.insertBefore(link, img);
+                            link.appendChild(img);
+                        } else {
+                            parentLink.href = value;
+                        }
+                    } else if (parentLink) {
+                        parentLink.parentNode.insertBefore(img, parentLink);
+                        parentLink.remove();
+                    }
+                });
+                
+                // Image Width
+                addRangeProperty('Width (%)', 'image-width', parseInt(img.style.maxWidth) || 100, 10, 100, function(value) {
+                    img.style.maxWidth = value + '%';
+                });
+                
+                // Alignment
+                addSelectProperty('Alignment', 'image-align', imageBlock.style.textAlign || 'center', [
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                ], function(value) {
+                    imageBlock.style.textAlign = value;
+                });
+            }
+            
+            function addButtonProperties() {
+                const buttonBlock = selectedElement.querySelector('.button-block');
+                const button = buttonBlock.querySelector('a');
+                
+                // Button Text
+                addTextProperty('Button Text', 'button-text', button.innerText, function(value) {
+                    button.innerText = value;
+                });
+                
+                // Link URL
+                addTextProperty('Link URL', 'link-url', button.href, function(value) {
+                    button.href = value;
+                });
+                
+                // Button Color
+                addColorProperty('Button Color', 'button-color', button.style.backgroundColor || '#3498db', function(value) {
+                    button.style.backgroundColor = value;
+                });
+                
+                // Text Color
+                addColorProperty('Text Color', 'text-color', button.style.color || '#ffffff', function(value) {
+                    button.style.color = value;
+                });
+                
+                // Button Width
+                addSelectProperty('Button Width', 'button-width', button.style.width || 'auto', [
+                    { value: 'auto', label: 'Auto' },
+                    { value: '100%', label: 'Full Width' },
+                ], function(value) {
+                    button.style.width = value;
+                });
+                
+                // Button Alignment
+                addSelectProperty('Alignment', 'button-align', buttonBlock.style.textAlign || 'center', [
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                ], function(value) {
+                    buttonBlock.style.textAlign = value;
+                });
+                
+                // Padding
+                addRangeProperty('Padding', 'padding', 
+                    parseInt(button.style.padding ? button.style.padding.split(' ')[0] : '10'), 
+                    5, 30, function(value) {
+                    button.style.padding = value + 'px ' + (value * 2) + 'px';
+                });
+                
+                // Border Radius
+                addRangeProperty('Border Radius', 'border-radius', 
+                    parseInt(button.style.borderRadius) || 4, 
+                    0, 20, function(value) {
+                    button.style.borderRadius = value + 'px';
+                });
+            }
+            
+            function addDividerProperties() {
+                const dividerBlock = selectedElement.querySelector('.divider-block');
+                const hr = dividerBlock.querySelector('hr');
+                
+                // Line Color
+                addColorProperty('Line Color', 'line-color', hr.style.borderTopColor || '#dddddd', function(value) {
+                    hr.style.borderTop = '1px solid ' + value;
+                });
+                
+                // Line Style
+                addSelectProperty('Line Style', 'line-style', hr.style.borderTopStyle || 'solid', [
+                    { value: 'solid', label: 'Solid' },
+                    { value: 'dashed', label: 'Dashed' },
+                    { value: 'dotted', label: 'Dotted' },
+                ], function(value) {
+                    hr.style.borderTopStyle = value;
+                });
+                
+                // Line Width
+                addRangeProperty('Line Width', 'line-width', 
+                    parseInt(hr.style.borderTopWidth) || 1, 
+                    1, 10, function(value) {
+                    hr.style.borderTopWidth = value + 'px';
+                });
+                
+                // Line Width (%)
+                addRangeProperty('Width (%)', 'width-percent', 
+                    parseInt(hr.style.width) || 100, 
+                    10, 100, function(value) {
+                    hr.style.width = value + '%';
+                });
+                
+                // Margin
+                addRangeProperty('Margin', 'margin', 
+                    parseInt(hr.style.margin ? hr.style.margin.split(' ')[0] : '15'), 
+                    0, 50, function(value) {
+                    hr.style.margin = value + 'px auto';
+                });
+            }
+            
+            function addSpacerProperties() {
+                const spacerBlock = selectedElement.querySelector('.spacer-block');
+                
+                // Height
+                addRangeProperty('Height', 'spacer-height', 
+                    parseInt(spacerBlock.style.height) || 30, 
+                    5, 100, function(value) {
+                    spacerBlock.style.height = value + 'px';
+                });
+            }
+            
+            function addContainerProperties() {
+                const containerBlock = selectedElement.querySelector('.column-block') || 
+                                      selectedElement.querySelector('.container-block');
+                
+                // Background Color
+                addColorProperty('Background Color', 'bg-color', containerBlock.style.backgroundColor || '', function(value) {
+                    containerBlock.style.backgroundColor = value;
+                });
+                
+                // Padding
+                addRangeProperty('Padding', 'padding', 
+                    parseInt(containerBlock.style.padding) || 0, 
+                    0, 50, function(value) {
+                    containerBlock.style.padding = value + 'px';
+                });
+                
+                // Border
+                addSelectProperty('Border Style', 'border-style', containerBlock.style.borderStyle || 'none', [
+                    { value: 'none', label: 'None' },
+                    { value: 'solid', label: 'Solid' },
+                    { value: 'dashed', label: 'Dashed' },
+                    { value: 'dotted', label: 'Dotted' },
+                ], function(value) {
+                    containerBlock.style.borderStyle = value;
+                    
+                    // Only show border properties if border is not 'none'
+                    const borderProps = document.querySelectorAll('.border-property');
+                    borderProps.forEach(prop => {
+                        prop.style.display = value === 'none' ? 'none' : 'block';
+                    });
+                });
+                
+                // Border Color (Only visible if border style is not 'none')
+                const borderDiv = document.createElement('div');
+                borderDiv.className = 'form-group border-property';
+                borderDiv.style.display = containerBlock.style.borderStyle && containerBlock.style.borderStyle !== 'none' ? 'block' : 'none';
+                
+                addColorProperty('Border Color', 'border-color', containerBlock.style.borderColor || '#dddddd', function(value) {
+                    containerBlock.style.borderColor = value;
+                }, borderDiv);
+                
+                // Border Width (Only visible if border style is not 'none')
+                const borderWidthDiv = document.createElement('div');
+                borderWidthDiv.className = 'form-group border-property';
+                borderWidthDiv.style.display = containerBlock.style.borderStyle && containerBlock.style.borderStyle !== 'none' ? 'block' : 'none';
+                
+                addRangeProperty('Border Width', 'border-width', 
+                    parseInt(containerBlock.style.borderWidth) || 1, 
+                    1, 10, function(value) {
+                    containerBlock.style.borderWidth = value + 'px';
+                }, borderWidthDiv);
+            }
+            
+            // Helper functions for adding different property types to the settings panel
+            function addTextProperty(label, id, value, onChange, parentElement = null) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="${id}">${label}</label>
+                    <input type="text" id="${id}" class="form-control" value="${value || ''}">
+                `;
+                
+                const input = div.querySelector('input');
+                input.addEventListener('input', function() {
+                    onChange(this.value);
+                });
+                
+                if (parentElement) {
+                    parentElement.appendChild(div);
+                    elementProperties.appendChild(parentElement);
+                } else {
+                    elementProperties.appendChild(div);
+                }
+            }
+            
+            function addColorProperty(label, id, value, onChange, parentElement = null) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="${id}">${label}</label>
+                    <input type="color" id="${id}" class="form-control" value="${value || '#000000'}">
+                `;
+                
+                const input = div.querySelector('input');
+                input.addEventListener('input', function() {
+                    onChange(this.value);
+                });
+                
+                if (parentElement) {
+                    parentElement.appendChild(div);
+                } else {
+                    elementProperties.appendChild(div);
+                }
+            }
+            
+            function addRangeProperty(label, id, value, min, max, onChange, parentElement = null) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="${id}">${label}: <span>${value}</span></label>
+                    <input type="range" id="${id}" class="form-control" min="${min}" max="${max}" value="${value}">
+                `;
+                
+                const input = div.querySelector('input');
+                const valueDisplay = div.querySelector('span');
+                
+                input.addEventListener('input', function() {
+                    valueDisplay.textContent = this.value;
+                    onChange(parseInt(this.value));
+                });
+                
+                if (parentElement) {
+                    parentElement.appendChild(div);
+                } else {
+                    elementProperties.appendChild(div);
+                }
+            }
+            
+            function addSelectProperty(label, id, value, options, onChange, parentElement = null) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                
+                let optionsHtml = '';
+                options.forEach(option => {
+                    optionsHtml += `<option value="${option.value}" ${option.value === value ? 'selected' : ''}>${option.label}</option>`;
+                });
+                
+                div.innerHTML = `
+                    <label for="${id}">${label}</label>
+                    <select id="${id}" class="form-control">
+                        ${optionsHtml}
+                    </select>
+                `;
+                
+                const select = div.querySelector('select');
+                select.addEventListener('change', function() {
+                    onChange(this.value);
+                });
+                
+                if (parentElement) {
+                    parentElement.appendChild(div);
+                } else {
+                    elementProperties.appendChild(div);
+                }
+            }
+            
+            // Preview, Save, Export functions
+            function previewEmail() {
+                // Create a popup window to preview the email
+                const previewWindow = window.open('', '_blank', 'width=600,height=800');
+                
+                // Clone the canvas content for the preview
+                const canvas = document.getElementById('email-canvas');
+                const clonedCanvas = canvas.cloneNode(true);
+                
+                // Remove controls and editing features from the clone
+                clonedCanvas.querySelectorAll('.controls, .dropzone').forEach(el => el.remove());
+                clonedCanvas.querySelectorAll('[contenteditable="true"]').forEach(el => {
+                    el.contentEditable = false;
+                });
+                
+                // Ensure all elements are visible
+                clonedCanvas.querySelectorAll('.email-block').forEach(block => {
+                    block.classList.remove('selected');
+                    block.style.border = 'none';
+                });
+                
+                // Write the preview HTML
+                previewWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Email Preview</title>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                font-family: Arial, sans-serif;
+                            }
+                            .preview-container {
+                                max-width: 600px;
+                                margin: 0 auto;
+                                background: #fff;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="preview-container">
+                            ${clonedCanvas.innerHTML}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                
+                previewWindow.document.close();
+            }
+            
+            function saveTemplate() {
+                // Create a JSON representation of the template
+                const canvas = document.getElementById('email-canvas');
+                const blocks = canvas.querySelectorAll('.email-block');
+                
+                const template = {
+                    blocks: []
+                };
+                
+                blocks.forEach(block => {
+                    const type = block.getAttribute('data-type');
+                    const blockData = {
+                        type: type,
+                        styles: {},
+                        content: {}
+                    };
+                    
+                    // Extract styles and content based on block type
+                    switch (type) {
+                        case 'text':
+                            const textBlock = block.querySelector('.text-block');
+                            blockData.styles = {
+                                color: textBlock.style.color,
+                                backgroundColor: textBlock.style.backgroundColor,
+                                fontSize: textBlock.style.fontSize,
+                                textAlign: textBlock.style.textAlign,
+                                padding: textBlock.style.padding
+                            };
+                            blockData.content = {
+                                html: textBlock.innerHTML
+                            };
+                            break;
+                        case 'image':
+                            const imageBlock = block.querySelector('.image-block');
+                            const img = imageBlock.querySelector('img');
+                            blockData.styles = {
+                                textAlign: imageBlock.style.textAlign
+                            };
+                            blockData.content = {
+                                src: img.src,
+                                alt: img.alt,
+                                maxWidth: img.style.maxWidth
+                            };
+                            break;
+                        // Add cases for other block types
+                    }
+                    
+                    template.blocks.push(blockData);
+                });
+                
+                // Convert template to JSON string
+                const jsonTemplate = JSON.stringify(template, null, 2);
+                
+                // Create a download link for the JSON file
+                const blob = new Blob([jsonTemplate], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'email-template.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            function exportHtml() {
+                // Clone the canvas content for export
+                const canvas = document.getElementById('email-canvas');
+                const clonedCanvas = canvas.cloneNode(true);
+                
+                // Remove controls and editing features from the clone
+                clonedCanvas.querySelectorAll('.controls, .dropzone').forEach(el => el.remove());
+                clonedCanvas.querySelectorAll('[contenteditable="true"]').forEach(el => {
+                    el.contentEditable = false;
+                });
+                
+                // Ensure all elements are visible and clean
+                clonedCanvas.querySelectorAll('.email-block').forEach(block => {
+                    block.classList.remove('selected');
+                    block.style.border = 'none';
+                    block.removeAttribute('draggable');
+                    block.removeAttribute('id');
+                    block.removeAttribute('data-type');
+                    
+                    // Remove event listeners (not perfect but helps)
+                    const newBlock = block.cloneNode(true);
+                    block.parentNode.replaceChild(newBlock, block);
+                });
+                
+                // Create the full HTML template
+                const htmlTemplate = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Email Template</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            font-family: Arial, sans-serif;
+                            -webkit-text-size-adjust: 100%;
+                            -ms-text-size-adjust: 100%;
+                        }
+                        .email-container {
+                            max-width: 600px;
+                            margin: 0 auto;
+                        }
+                        img {
+                            -ms-interpolation-mode: bicubic;
+                            max-width: 100%;
+                        }
+                        /* Ensures tables are rendered correctly in Outlook */
+                        table {
+                            border-collapse: collapse;
+                            mso-table-lspace: 0pt;
+                            mso-table-rspace: 0pt;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="email-container">
+                        ${clonedCanvas.innerHTML}
+                    </div>
+                </body>
+                </html>
+                `;
+                
+                // Create a download link for the HTML file
+                const blob = new Blob([htmlTemplate], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'email-template.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            function sendTestEmail() {
+                // In a real implementation, this would send the email to a server
+                // Here we'll just show a modal dialog
+                
+                const modal = document.createElement('div');
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                modal.style.display = 'flex';
+                modal.style.justifyContent = 'center';
+                modal.style.alignItems = 'center';
+                modal.style.zIndex = '1000';
+                
+                const modalContent = document.createElement('div');
+                modalContent.style.backgroundColor = '#fff';
+                modalContent.style.padding = '20px';
+                modalContent.style.borderRadius = '5px';
+                modalContent.style.maxWidth = '400px';
+                modalContent.style.width = '100%';
+                
+                modalContent.innerHTML = `
+                    <h3 style="margin-top: 0;">Send Test Email</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Email Address</label>
+                        <input type="email" id="test-email" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Subject</label>
+                        <input type="text" id="test-subject" value="Test Email" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button id="cancel-test" style="margin-right: 10px; padding: 8px 15px; background: #ccc; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                        <button id="send-test" style="padding: 8px 15px; background: #3498db; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Send</button>
+                    </div>
+                `;
+                
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+                
+                document.getElementById('cancel-test').addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                document.getElementById('send-test').addEventListener('click', function() {
+                    const email = document.getElementById('test-email').value;
+                    const subject = document.getElementById('test-subject').value;
+                    
+                    if (!email) {
+                        alert('Please enter an email address');
+                        return;
+                    }
+                    
+                    // Here you would send the email to your server
+                    // For this demo, we'll just show a success message
+                    modalContent.innerHTML = `
+                        <h3 style="margin-top: 0;">Email Sent!</h3>
+                        <p>A test email has been sent to ${email} with the subject "${subject}".</p>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button id="close-modal" style="padding: 8px 15px; background: #3498db; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('close-modal').addEventListener('click', function() {
+                        document.body.removeChild(modal);
+                    });
+                });
+            }
+            
+            // Initialize by deselecting elements when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.email-block') && !e.target.closest('.element-settings')) {
+                    if (selectedElement) {
+                        selectedElement.classList.remove('selected');
+                        selectedElement = null;
+                        updateSettingsPanel();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
